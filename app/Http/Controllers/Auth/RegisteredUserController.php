@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Route;
 
 class RegisteredUserController extends Controller
 {
@@ -45,11 +46,14 @@ class RegisteredUserController extends Controller
             'team_code' => $request->team_code,
             'slack_name' => $request->slack_name,
         ]);
-
+        $routeName = Route::currentRouteName();
+        if ($routeName == "admin.user.store") {
+            return redirect()->route("user");
+        }
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME);
+        // return redirect(RouteServiceProvider::HOME);
     }
 }

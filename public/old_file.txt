@@ -1,0 +1,187 @@
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const addFileButton = document.getElementById('add-more');
+
+            const fileModal = document.getElementById('fileModal');
+
+            const closeFileModalButton = document.getElementById('close-file-modal');
+
+            const fileInputContainer = document.getElementById('file-input-container');
+
+            const fileTableBody = document.getElementById('file-table-body');
+
+
+
+            // Open modal
+
+            addFileButton?.addEventListener('click', () => {
+
+                fileModal.classList.remove('hidden');
+
+                fileModal.classList.add('flex');
+
+            });
+
+
+
+            // Close modal
+
+            closeFileModalButton?.addEventListener('click', () => {
+
+                fileModal.classList.add('hidden');
+
+                fileModal.classList.remove('flex');
+
+            });
+
+
+
+            // Function to add new input field
+
+            window.addInput = function () {
+
+                const inputWrapper = document.createElement('div');
+
+                inputWrapper.classList.add('flex', 'items-center', 'space-x-2', 'mt-2');
+
+
+
+                const newInput = document.createElement('input');
+
+                newInput.type = 'text';
+
+                newInput.name = 'file_path[]';
+
+                newInput.placeholder = '/path/to/file.txt';
+
+                newInput.classList.add('block', 'w-full', 'rounded-md', 'border', 'text-black', 'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-500');
+
+
+
+                const removeButton = document.createElement('button');
+
+                removeButton.innerHTML = '✖';
+
+                removeButton.type = 'button';
+
+                removeButton.classList.add('text-sm', 'text-blue-500', 'hover:text-blue-700', 'focus:outline-none');
+
+                removeButton.addEventListener('click', () => inputWrapper.remove());
+
+
+
+                inputWrapper.append(newInput, removeButton);
+
+                fileInputContainer.appendChild(inputWrapper);
+
+            };
+
+
+
+            // Fetch file data and populate table
+
+            function fetchFileData() {
+
+    fetch('/all-data')
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            fileTableBody.innerHTML = ""; 
+
+
+
+            //if (data.length === 0) {
+
+            //    fileTableBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-4">No file paths uploaded yet.</td></tr>`;
+
+            //   return;
+
+            //}
+
+             if (data.length != 0) {
+
+                fileTableBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-4">No file paths uploaded yet.</td></tr>`;
+
+                return;
+
+            }
+
+
+
+            data.report.forEach((file, index) => {
+
+                let filePaths = JSON.parse(file.path); 
+
+                let formattedPaths = filePaths.join(', ');
+
+                let date = new Date(file.created_at); 
+
+                
+
+                let formattedDateTime = date.toLocaleDateString('en-IN', {
+
+                    month: 'short', 
+
+                    day: '2-digit', 
+
+                    year: 'numeric' 
+
+                }).replace(',', '').replace(' ', '/') + 
+
+
+
+                ' ' + date.toLocaleTimeString('en-IN', {
+
+                    hour: '2-digit',   
+
+                    minute: '2-digit', 
+
+                    hour12: true       
+
+                });
+
+
+
+                const row = `
+
+                    <tr class="border border-gray-300 bg-gray-200">
+
+                        <td class="border border-gray-300 px-4 py-2">${index + 1}</td>
+
+                        <td class="border border-gray-300 px-4 py-2">${file.description}</td>
+
+                        <td class="border border-gray-300 px-4 py-2">${formattedPaths}</td>
+
+                        <td class="border border-gray-300 px-4 py-2">${formattedDateTime}</td> 
+
+                    </tr>
+
+                `;
+
+                fileTableBody.innerHTML += row;
+
+            });
+
+        })
+
+        .catch(error => {
+
+            console.error("Error fetching data:", error);
+
+            fileTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 py-4">Failed to load data.</td></tr>`;
+
+        });
+
+}
+
+
+
+            fetchFileData();
+
+        });
+
+    </script>

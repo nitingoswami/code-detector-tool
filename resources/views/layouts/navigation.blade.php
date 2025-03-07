@@ -1,6 +1,6 @@
 <nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mx-24 px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
@@ -16,6 +16,20 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                 </div>
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link :href="route('app')" :active="request()->routeIs('app')">
+                        {{ __('Daily Report') }}
+                    </x-nav-link>
+                </div>
+                @if (Auth::user()->user_role=="admin")
+                    <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                        <x-nav-link :href="route('user')" :active="request()->routeIs('user')">
+                            {{ __('User Controller') }}
+                        </x-nav-link>
+                    </div>
+                @endif
+
+
             </div>
 
             <!-- Settings Dropdown -->
@@ -39,7 +53,7 @@
                         </x-dropdown-link>
 
                         <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" class="mb-0">
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
@@ -85,7 +99,7 @@
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }} " class="mb-0">
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
