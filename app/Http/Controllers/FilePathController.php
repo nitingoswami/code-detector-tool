@@ -19,6 +19,7 @@ class FilePathController extends Controller
     public function store(Request $request)
     {
         try {
+            // Getting user
             $user = User::findOrFail(Auth::id());
             $validator = Validator::make($request->all(), [
                 'actual_time' => 'required|numeric',
