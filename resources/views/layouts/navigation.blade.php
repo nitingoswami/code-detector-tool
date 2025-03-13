@@ -28,6 +28,18 @@
                         </x-nav-link>
                     </div>
                 @endif
+                @if (Auth::user()->user_role=="admin")
+                    <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                        <x-nav-link :href="route('project')" :active="request()->routeIs('project')">
+                            {{ __('Projects') }}
+                        </x-nav-link>
+                    </div>
+                @endif
+                {{-- <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                        <x-nav-link :href="route('task')" :active="request()->routeIs('task')">
+                            {{ __('Task Controller') }}
+                        </x-nav-link>
+                </div> --}}
 
 
             </div>

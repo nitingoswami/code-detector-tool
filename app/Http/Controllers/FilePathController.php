@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\DailyReport;
 use App\Models\ReportDetail;
 use App\Models\Comment;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -26,32 +27,63 @@ class FilePathController extends Controller
                 'description' => 'required|string|min:10',
                 'title'       => 'required|string|min:5',
             ]);
-        
+            
             $filePaths = is_string($request->file_path) ? json_decode($request->file_path, true) : $request->file_path;
             $one=false;
-            $latestReport = DailyReport::latest()->first(); 
+            $latestReport = DailyReport::where('id',$request->dailyreport_id)->get(); 
             $today = Carbon::today()->toDateString();
             $filePaths = json_decode($request->file_path, true);
             $invalidPaths = [];
-            foreach ($filePaths as $filePath) {
+            
+            if ($user->user_role == 'admin') {
+                if ($validator->fails()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $validator->errors(),
+                        'path' => '',
+                        'invalid_paths' => []
+                    ], 422);
+                }
+            } elseif ($user->user_role == 'client') {
+                foreach ($filePaths as $filePath) {
 
-                if (!file_exists($filePath)) {
-                    $invalidPaths[] = $filePath;
+                    if (!file_exists($filePath)) {
+                        $invalidPaths[] = $filePath;
+                    }
+                }
+                
+                // Check only the !empty($invalidPaths) condition for client
+                if (!empty($invalidPaths)) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => [],
+                        'path' => 'Invalid File Paths',
+                        'invalid_paths' => $invalidPaths
+                    ], 422);
                 }
             }
-            
-            if ($validator->fails() || !empty($invalidPaths) ) {
+
+            if($user->user_role=="admin"){
+                
+                $localUser=User::findOrFail($request->user_name);
+                $report = new DailyReport();
+                $report->user_id = $localUser->id;
+                $report->description = $request->description;
+                $report->title = $request->title;
+                $report->name = $localUser->name;
+                $report->actual_time = $request->actual_time . ' min';
+                $report->user_name = $request->user_name;
+                $report->project_id = $request->project_id;
+                $report->save();
                 return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors(),
-                    'path' => !empty($invalidPaths)?'Invalid File Paths':"",
-                    'invalid_paths' => $invalidPaths
-                ], 422);
-            }
+                    'success' => true,
+                    'message' => 'Daily Report stored !',
+                ]);
     
+        }
+            
             foreach ($filePaths as $filePath) {
                 $lines = file($filePath);
-                
                 $insideBlock = false;
                 $codeBlock = [];
                 $newCodeBlock = [];
@@ -88,18 +120,12 @@ class FilePathController extends Controller
                             if (!empty($codeBlock) || !empty($newCodeBlock)) {
                                 if ($user->team_code == $metadata['team'] || $user->user_role == "admin") {
                                     if ($one == false) {
-                                        $report = new DailyReport();
-                                        $report->user_id = Auth::id();
-                                        $report->description = $request->description;
-                                        $report->title = $request->title;
-                                        $report->name = $user->name;
-                                        $report->actual_time = $request->actual_time . ' min';
-                                        $report->path = json_encode($filePaths);
-                                        $report->save();
+                                        $latestReport = DailyReport::where('id',$request->dailyreport_id)->first(); 
+                                        $latestReport->path = json_encode($filePaths);
+                                        $latestReport->save();
                                         $one = true;
                                     }
             
-                                    $latestReport = DailyReport::latest()->first();
                                     if ($formattedDate == $today) {
                                         ReportDetail::create([
                                             'team' => $metadata['team'] ?? 'Unknown',
@@ -107,7 +133,7 @@ class FilePathController extends Controller
                                             'summary' => $metadata['summary'] ?? 'No summary provided',
                                             'date' => $metadata['date'],
                                             'file_path' => $filePath,
-                                            'daily_report_id' => $latestReport->id,
+                                            'daily_report_id' => $request->dailyreport_id,
             
                                             'old_code' => json_encode(array_values(array_filter(array_map(function ($line, $num) {
                                                 $trimmed = trim(ltrim($line, '/ '));
@@ -128,6 +154,7 @@ class FilePathController extends Controller
             
                     if ($insideBlock) {
                         if (strpos($trimmedLine, '#') === 0) {
+                            
                             $codeBlock[] = $trimmedLine;
                             $codeBlockLines[] = $lineNumber + 1;  // Store 1-based line number
                         } else {
@@ -160,9 +187,12 @@ class FilePathController extends Controller
         try {
             $user = User::findOrFail(Auth::id());
             $query = DailyReport::query();
-    
             if ($user->user_role == "client") {
                 $query->where("user_id", $user->id);
+            }
+        
+            if ($request->filled('project_id')) {
+                $query->where('project_id', $request->project_id);
             }
     
             if ($request->filled('user_id')) {
@@ -193,6 +223,7 @@ class FilePathController extends Controller
 
     public function update(Request $request, $id) {
         try {
+            
             $file = DailyReport::findOrFail($id);
             $reportDetails = ReportDetail::where('daily_report_id', $id)->delete();
             $user = User::findOrFail(Auth::id());
@@ -202,30 +233,57 @@ class FilePathController extends Controller
                 'description' => 'required|string|min:10',
                 'title'       => 'required|string|min:5',
             ]);
-        
-            $filePaths = is_string($request->file_path) ? json_decode($request->file_path, true) : $request->file_path;
-        
+
             $invalidPaths = [];
-            foreach ($filePaths as $filePath) {
-
-                if (!file_exists($filePath)) {
-                    $invalidPaths[] = $filePath;
+            $filePaths = is_string($request->file_path) ? json_decode($request->file_path, true) : $request->file_path;
+            if ($user->user_role == 'admin') {
+                // Check only the $validator->fails() condition for admin
+                if ($validator->fails()) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => $validator->errors(),
+                        'path' => '',
+                        'invalid_paths' => []
+                    ], 422);
                 }
-            }
+            } elseif ($user->user_role == 'client') {
+                foreach ($filePaths as $filePath) {
 
-            if ($validator->fails() || !empty($invalidPaths) ) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors(),
-                    'path' => !empty($invalidPaths)?'Invalid File Paths':"",
-                    'invalid_paths' => $invalidPaths
-                ], 422);
+                    if (!file_exists($filePath)) {
+                        $invalidPaths[] = $filePath;
+                    }
+                }
+                
+                // Check only the !empty($invalidPaths) condition for client
+                if (!empty($invalidPaths)) {
+                    return response()->json([
+                        'success' => false,
+                        'errors' => [],
+                        'path' => 'Invalid File Paths',
+                        'invalid_paths' => $invalidPaths
+                    ], 422);
+                }
             }
             
             if ($file) { 
                 $one=false; 
                 $today = Carbon::today()->toDateString();
                 $filePaths =  json_decode($request->file_path, true);
+                if($user->user_role == 'admin'){
+                    $localUser=User::findOrFail($request->user_name);
+                    $file->name =$localUser->name;
+                    $file->title = $request->title;
+                    $file->description = $request->description;
+                    $file->actual_time = $request->actual_time;
+                    $file->user_name = $request->user_name;
+                    $file->user_id  = $request->user_name;
+                    $file->project_id = $request->project_id;
+                    $file->save();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Daily Report Update Successfully !',
+                    ]);
+                }
                 foreach ($filePaths as $filePath) {
                 
                     $lines = file($filePath);
@@ -261,17 +319,15 @@ class FilePathController extends Controller
                 
                             if (strpos($lineWithoutTags, 'End') !== false) {
                                 $insideBlock = false;
+                                
                     
                                 if (!empty($codeBlock) || !empty($newCodeBlock)) {
                                         if($user->team_code==$metadata['team'] || $user->user_role=="admin"){
                                             if($one==false){
-                                                $file->name =$file->name;
-                                                $file->title = $request->title;
-                                                $file->description = $request->description;
-                                                $file->actual_time = $request->actual_time;
-                                                $file->path = json_encode($filePaths);
-                                                $file->save();
-                                                $one=true;
+                                                $latestReport = DailyReport::where('id',$request->dailyreport_id)->first(); 
+                                                $latestReport->path = json_encode($filePaths);
+                                                $latestReport->save();
+                                                $one = true;
                                             }
                                             $latestReport = $id; 
                                             if ($formattedDate == $today) {
@@ -429,5 +485,51 @@ class FilePathController extends Controller
                 'status' => "Report unmarked successfully",
             ]); 
         }
-    } 
+    }
+    
+   
+
+    public function updateTaskStatus(Request $request)
+    {
+
+        try {
+            $dailyReportData = DailyReport::findOrFail($request->report_id);
+    
+            if ($dailyReportData->task_status == 'new') {
+                $dailyReportData->task_status = 'complete'; // Correct assignment
+            } else {
+                $dailyReportData->task_status = 'new'; // Corrected column name
+            }
+    
+            $dailyReportData->save();
+    
+            return response()->json([
+                'success' => true,
+                'status' => $dailyReportData->task_status == 'complete' ? "Complete" :"New",
+                'message' => $dailyReportData->task_status == 'complete' ? "Task Completed successfully" : "Task marked as New successfully",
+            ]);
+            
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'error' => 'An error occurred while processing the request.',
+            ], 500);
+        }
+    }
+
+
+    public function savePerformanceRating(Request $request)
+    {
+        try {
+            $report = ReportDetail::findOrFail($request->report_id);
+            $report->performance_rating = $request->rating;
+            $report->save();
+    
+            return response()->json(['success' => true, 'message' => 'Performance rating updated.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to update rating.']);
+        }
+    }
+
 }
+

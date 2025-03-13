@@ -5,15 +5,7 @@
                 {{ __('Upload File Path') }}
             </h2>
             <div>
-           #Team-004 | Fixed | Variable update from int to fload | 07 Mar 2025 | Start
-
-     
-       #    fileModal.classList.remove('flex');
-       #     });
          
-             newInput.name = 'file_path[]';
-
-         #Team-004 | Fixed | Variable update from int to fload | 07 Mar 2025 | End
 
             
                 <button type="button" id="add-more" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
@@ -122,6 +114,17 @@
                 inputWrapper.append(newInput, removeButton);
                 fileInputContainer.appendChild(inputWrapper);
             };
+              #Team-004 | Fixed | Variable update from int to fload | 12 Mar 2025 | Start
+
+     
+       #    fileModal.classList.remove('flex');
+       #     });
+         
+            fetch('/all-data')
+                    .then(response => response.json())
+                    .then(data => {
+
+         #Team-004 | Fixed | Variable update from int to fload | 12 Mar 2025 | End
 
 
             function fetchFileData() {

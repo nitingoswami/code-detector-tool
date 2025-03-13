@@ -14,6 +14,31 @@
     
     <!-- Table to Display File Paths -->
     <div class="container mx-auto mt-6">
+        #Team-004 | Fixed | Variable update from int to fload | 12 Mar 2025 | Start
+
+     
+       #    fileModal.classList.remove('flex');
+       #     });
+         
+              <table class="w-full border-collapse border border-gray-300">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="border border-gray-300 px-4 py-2 text-left">S no.</th>
+                    <th class="border border-gray-300 px-4 py-2 text-left">Description</th>
+                    <th class="border border-gray-300 px-4 py-2 text-left">File Path</th>
+                    <th class="border border-gray-300 px-4 py-2 text-left">Date-time</th>
+                </tr>
+            </thead>
+            <tbody id="file-table-body">
+                <tr>
+                    <td colspan="3" class="text-center text-gray-500 py-4">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+
+         #Team-004 | Fixed | Variable update from int to fload | 12 Mar 2025 | End
+
+            
         <table class="w-full border-collapse border border-gray-300">
             <thead>
                 <tr class="bg-gray-200">
@@ -106,6 +131,19 @@
                 inputWrapper.append(newInput, removeButton);
                 fileInputContainer.appendChild(inputWrapper);
             };
+
+                 <div>
+           #Team-004 | Fixed | Variable update from int to fload | 13 Mar 2025 | Start
+
+     
+       #    fileModal.classList.remove('flex');
+       #     });
+         
+             newInput.name = 'file_path[]';
+
+         #Team-004 | Fixed | Variable update from int to fload | 13 Mar 2025 | End
+
+            
 
 
             function fetchFileData() {

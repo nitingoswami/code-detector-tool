@@ -15,6 +15,8 @@ class DailyReport extends Model
         'description',
         'name',
         'title',
+        'user_name',
+        'project_id'
     ];
 
 

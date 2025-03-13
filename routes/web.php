@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FilePathController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 
@@ -53,6 +54,14 @@ Route::delete('/user-delete/{id}', [UserController::class, 'destroy'])->name('us
 
 
 
+Route::get('/project-data', [ProjectController::class, 'index']);
+
+Route::put('/project-update/{id}', [ProjectController::class, 'update']);
+
+Route::delete('/project-delete/{id}', [ProjectController::class, 'destroy'])->name('project.destroy');
+
+Route::post('/update-task-status', [FilePathController::class, 'updateTaskStatus'])->name("update.task.status");
+
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminAuthController::class, 'login']);
@@ -68,13 +77,20 @@ Route::prefix('admin')->group(function () {
         Route::get('/user', function () {
             return view('user');
         })->name('user');
+
         Route::post('/create-user', [RegisteredUserController::class, "store"])->name("admin.user.store");
         Route::post('/comment', [FilePathController::class, 'storeComment'])->name('admin.store.comment');
         Route::get('/get/comment', [FilePathController::class, 'getComment'])->name('admin.get.comment');
         Route::post('/status', [FilePathController::class, 'updateStatus'])->name('admin.update.status');
-        
 
-    
+
+        Route::get('/project', function () {
+            return view('project');
+        })->name('project');
+
+
+        Route::post('/performance-rating', [FilePathController::class, "savePerformanceRating"])->name("admin.performanceRating.store");
+        Route::post('/create-project', [ProjectController::class, "storeProject"])->name("admin.createProject.store");
     });
 });
 

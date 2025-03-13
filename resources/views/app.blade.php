@@ -1,17 +1,17 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="d-flex w-100 flex justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+             <h2 id="mainPageHeading" class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('Daily Report List') }}
             </h2>
-
             <div>
-                @if (Auth::user()->user_role!="admin")
-                <button type="button" id="add-more" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Create Daily Report
-                </button>
-                @endif
-
+                <div>
+                    @if (Auth::user()->user_role=="admin")
+                    <button type="button" id="add-more" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Assign Task
+                    </button>
+                    @endif
+                </div>
             </div>
         </div>
     </x-slot>
@@ -62,11 +62,8 @@
                     <tr class="bg-gray-200">
                         <th class="border border-gray-300 px-4 py-2 text-left">S No.</th>
                         <th class="border border-gray-300 px-4 py-2 text-left">Title</th>
-                        {{-- <th class="border border-gray-300 px-4 py-2 text-left">Name</th>
-                        <th class="border border-gray-300 px-4 py-2 text-left">Description</th> --}}
                         <th class="border border-gray-300 px-4 py-2 text-left">Actual Time</th>
                         <th class="border border-gray-300 px-4 py-2 text-left">Status</th>
-                        {{-- <th class="border border-gray-300 px-4 py-2 text-left">File Path</th> --}}
                         <th class="border border-gray-300 px-4 py-2 text-left">Date-Time</th>
                         <th class="border border-gray-300 px-4 py-2 text-left">Action</th>
                     </tr>
@@ -95,7 +92,9 @@
             </button>
             </div>
             <form id="file-form" method="POST">
+                @if (Auth::user()->user_role!="admin")
                 <p id="name" class="text-lg mb-2"></p>
+                @endif
                 @csrf
 
                 <!-- Title Input -->
@@ -118,28 +117,31 @@
                 </div>
 
                 <div class="mb-4">
-                    <label for="actual_time" class="block text-sm font-medium text-gray-700">Actual Time On Task (Minutes)</label>
+                    <label for="actual_time" class="block text-sm font-medium text-gray-700">Estimate Time On Task (Minutes)</label>
                     <input type="text" id="actual_time" name="actual_time"
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="Enter Title" required>
+                        placeholder="Estimate Time On Task (Minutes)" required>
                     <p class="text-red-500 text-xs mt-1 hidden" id="actual_time-error"></p>
                     
                     
                 </div>
-
-                <!-- File Path Inputs -->
-                <div class="mb-4">
-                    <label for="file_path" class="block text-sm font-medium text-gray-700">File Path</label>
-                    <div id="file-input-container">
-                        <div class="flex items-center space-x-2">
-                            <input type="text" name="file_path[]" class="file-input mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="/path/to/file.txt" required>
-                            <button type="button" class="add-input-btn text-2xl text-blue-500" onclick="addInput()">+</button>
-                        </div>
-                    </div>
-                    <p class="text-red-500 text-xs mt-1 hidden" id="file-error"></p>
-                
+                 @if (Auth::user()->user_role=="admin")
+                <div class="mb-3">
+                    <label for="userSelect" class="block text-sm font-medium text-gray-700">Select User</label>
+                    <select id="userSelect" name="user_name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        <option value="">Select a user</option>
+                    </select>
                 </div>
 
+                <div class="mb-3">
+                    <label for="project_id" class="block text-sm font-medium text-gray-700">Project</label>
+                    <select id="project_id" name="project_id" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        <option value="">Select a Project</option>
+                    </select>
+                    {{-- <input type="text" id="project" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" name="project" required> --}}
+                </div>
+                @endif
+                
                 <!-- Buttons -->
                 <div class="flex justify-center mt-6 space-x-2">
                     <button type="button" id="close-file-modal" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">Close</button>
@@ -156,6 +158,20 @@
                 inline: true, // Keeps the calendar always open
                 dateFormat: "Y-m-d", // Adjust date format as needed
             });
+
+
+            const paramsString = window.location.search;
+
+            const searchParams = new URLSearchParams(paramsString);
+
+            window.projectId = searchParams.get('data-id');
+            let  name=searchParams.get('data-name');
+
+            if (projectId) {
+                const selectedHeading = document.getElementById('mainPageHeading');
+                selectedHeading.innerText = `${name} :  ${selectedHeading.innerText}`;
+            }
+
         });
         document.addEventListener('DOMContentLoaded', function () {
             const fileTableBody = document.getElementById('file-table-body');
@@ -178,8 +194,44 @@
                     .catch(error => console.error('Error fetching user data:', error));
             }
 
+            function fetchProjectList() {
+                fetch('/project-data')
+                    .then(response => response.json())
+                    .then(data => {
+                        allProjects = data.projects || [];
+                        populateProjectList(allProjects);
+                    })
+                    .catch(error => console.error('Error fetching Project data:', error));
+            }
+
+            function populateProjectList(projects) {
+                @if (Auth::user()->user_role=="admin")
+                const selectedProject = document.getElementById("project_id");
+                selectedProject.innerHTML = '<option value="">Select a Project</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement("option");
+                    option.value = project.id;
+                    option.textContent = project.project_name;
+                    selectedProject.appendChild(option);
+                });
+                @endif
+            }
+
+
+
             //  Populate user list
             function populateUserList(users) {
+                @if (Auth::user()->user_role=="admin")
+                const userSelect = document.getElementById("userSelect");
+                userSelect.innerHTML = '<option value="">Select a user</option>';
+                users.forEach(user => {
+                    const option = document.createElement("option");
+                    option.value = user.id;
+                    option.textContent = user.name;
+                    userSelect.appendChild(option);
+                });
+                @endif
                 if (!userList) return;
                 userList.innerHTML = ''; // Clear the list before populating
 
@@ -276,6 +328,7 @@
                 const params = new URLSearchParams();
                 if (selectedDate) params.append("date", selectedDate);
                 if (selectedUser) params.append("user_id", selectedUser);
+                if (window.projectId) params.append("project_id", window.projectId);
 
                 if (params.toString()) url += `&${params.toString()}`;
                 fetch(url)
@@ -322,7 +375,7 @@
                             status1Count++;
                         }
                     });
-
+                    console.log(file,'file');
                     const shortenedPath = file.description.length > 15 ? file.description.slice(0, 17) + "..." : file.description;
                     let totalComms = file.report_data?.reduce((sum, report) => sum + (report.status || 0), 0) || 0;
                     let totalComments = file.report_data?.reduce((sum, report) => sum + (report.comment_list?.length || 0), 0) || 0;
@@ -344,8 +397,10 @@
                                     style="padding-block: 4px;">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <button data-id="${file.id}" data-name="${file.name}" data-title="${file.title}" data-actual_time="${file.actual_time}" data-description="${file.description}" data-paths='${JSON.stringify(filePaths)}' class="edit-btn py-1 rounded-md"><i class="fa-solid fa-pen-to-square"></i></button>
+                                @if (Auth::user()->user_role=="admin")
+                                <button data-id="${file.id}" data-name="${file.name}" data-title="${file.title}" data-actual_time="${file.actual_time}" data-description="${file.description}" data-paths="${JSON.stringify(filePaths)}" data-user_name="${file.user_id}" data-project_id="${file.project_id}" class="edit-btn py-1 rounded-md"><i class="fa-solid fa-pen-to-square"></i></button>
                                 <button data-id="${file.id}" class="delete-btn py-1 ml-2"><i class="fa-solid fa-trash"></i></button>
+                                @endif
                             </td>
                         </tr>`;
                     fileTableBody.innerHTML += row;
@@ -378,7 +433,12 @@
 
             //  Initial Data Load
             fetchUserData();
+            fetchProjectList()
             fetchFileData(1);
+
+
+
+            
         });
 
 
@@ -386,8 +446,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             const addFileButton = document.getElementById('add-more');
             const fileModal = document.getElementById('fileModal');
-            const closeFileModalButtons = document.querySelectorAll('#close-file-modal');;
+            const closeFileModalButtons = document.querySelectorAll('#close-file-modal');
+            {{-- @if (Auth::user()->user_role!="admin")
             const fileInputContainer = document.getElementById('file-input-container');
+            @endif --}}
             const fileTableBody = document.getElementById('file-table-body');
             const modalForm = fileModal.querySelector('form');
 
@@ -400,13 +462,14 @@
                 editId = null;
                 modalForm.reset();
                 document.getElementById('modal-title').textContent = "Create Daily Report";
+                {{-- @if (Auth::user()->user_role!="admin")
                 fileInputContainer.innerHTML = `
                 <div class="flex items-center space-x-2">
                     <input type="text" name="file_path[]" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="/path/to/file.txt" required>
                     <p>
                     <button type="button" class="add-input-btn text-2xl text-blue-500" onclick="addInput()">+</button>
                 </div>`;
-
+                @endif --}}
                 fileModal.classList.remove('hidden');
                 fileModal.classList.add('flex');
             });
@@ -449,8 +512,9 @@
                 errorMessage.id = `file-path-error-${Date.now()}`; // Unique ID for each error message
 
                 inputWrapper.append(newInput, removeButton, errorMessage);
+                {{-- @if (Auth::user()->user_role!="admin")
                 fileInputContainer.appendChild(inputWrapper);
-
+                @endif --}}
                 // Clear error on input change
                 newInput.addEventListener('input', () => {
                     errorMessage.classList.add('hidden');
@@ -458,85 +522,7 @@
             };
 
             // Fetch file data and populate table
-            function fetchFileData() {
-                fetch('/all-data')
-                    .then(response => response.json())
-                    .then(data => {
-                        fileTableBody.innerHTML = ""; // Clear table before inserting new data
-
-                        if (data.length === 0) {
-                            fileTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-500 py-4">No file paths uploaded yet.</td></tr>`;
-                            return;
-                        }
-
-                        data.reports.data.forEach((file, index) => {
-                            
-                            let filePaths = JSON.parse(file?.path) || [];
-                            let formattedPaths = filePaths?.join(', ');
-                            let date = new Date(file.created_at);
-                            let formattedDateTime = date.toLocaleDateString('en-IN', {
-                                    month: 'short'
-                                    , day: '2-digit'
-                                    , year: 'numeric'
-                                }).replace(',', '').replace(' ', '/') +
-                                ' ' + date.toLocaleTimeString('en-IN', {
-                                    hour: '2-digit'
-                                    , minute: '2-digit'
-                                    , hour12: true
-                                });
-                            {{-- const shortenedPath = file.description.length > 15 ?
-                                file.description.slice(0, 17) + "..." :
-                                file.description; --}}
-                            let status0Count = 0;
-                            let status1Count = 0;
-
-                            file.report_data?.forEach(report => {
-                                if (report.status === 0) {
-                                    status0Count++;
-                                } else if (report.status === 1) {
-                                    status1Count++;
-                                }
-                            });
-
-                            const shortenedPath = file.description.length > 15 ? file.description.slice(0, 17) + "..." : file.description;
-                            let totalComms = file.report_data?.reduce((sum, report) => sum + (report.status || 0), 0) || 0;
-                            let totalComments = file.report_data?.reduce((sum, report) => sum + (report.comment_list?.length || 0), 0) || 0;
-                    
-                            const row = ` 
-                            <tr class="border border-gray-300 bg-white">
-                                <td class="border border-gray-300 px-4 py-2">${index + 1}</td>
-                                <td class="border border-gray-300 px-4 py-2">${file.title}</td> 
-                                 {{-- <td class="border border-gray-300 px-4 py-2">${file.name}</td> 
-
-                                <td class="border border-gray-300 px-4 py-2">${shortenedPath}</td> --}}
-                                <td class="border border-gray-300 px-4 py-2">${file.actual_time}</td>
-                                <td class="px-4 py-2 flex gap-3 " > <p class="bg-green-500 text-white rounded-xl px-4 py-1 text-center min-w-[3rem]">${status1Count}</p> <p class="bg-orange-500 text-white rounded-xl px-4 py-1 text-center min-w-[3rem]">${status0Count}</p> <p class="bg-red-500 text-white rounded-xl px-4 py-1 text-center min-w-[3rem]">${totalComments}</p></td>
-                                {{-- <td class="border border-gray-300 px-4 py-2">${shortenedPath}</td> --}}
-                                <td class="border border-gray-300 px-4 py-2">${formattedDateTime}</td> 
-                                <td class="border border-gray-300 px-4 py-2">
-                                 
-                                <a href="http://127.0.0.1:8000/report_view/${file.id}" 
-                                   target="_blank" 
-                                    rel="noopener noreferrer"
-                                    class="view-btn py-2 rounded-md  mr-3"
-                                    style="padding-block: 4px;">
-                                    <i class="fa-solid fa-eye"></i>
-                                </a>
-                                <button data-id="${file.id}" data-name="${file.name}" data-title="${file.title}" data-description="${file.description}" data-actual_time="${file.actual_time}" data-paths='${JSON.stringify(filePaths)}' class="edit-btn py-1 rounded-md"><i class="fa-solid fa-pen-to-square"></i></button>
-                                <button data-id="${file.id}" class="delete-btn py-1 ml-2"><i class="fa-solid fa-trash"></i></button>
-                                    
-
-                                </td>
-                            </tr>`;
-                            fileTableBody.innerHTML += row;
-                        });
-                    })
-                    .catch(error => {
-                        console.error("Error fetching data:", error);
-                        fileTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-red-500 py-4">Failed to load data.</td></tr>`;
-                    });
-            }
-
+            
            
             document.addEventListener('click', function(event) {
                 const editButton = event.target.closest('.edit-btn');
@@ -553,9 +539,21 @@
                     document.getElementById('title').value = editButton.dataset.title;
                     document.getElementById('description').value = editButton.dataset.description;
                     document.getElementById('actual_time').value = editButton.dataset.actual_time;
+                   
+                    const userSelect = document.getElementById('userSelect');
+                    if (userSelect) {
+                        userSelect.value = editButton.dataset.user_name || ""; // Ensure dataset contains user_id
+                    }
+                    
+                    const projectSelect = document.getElementById('project_id');
+                    if (projectSelect) {
+                        projectSelect.value = editButton.dataset.project_id || ""; // Ensure dataset contains project_id
+                    }
 
-                    fileInputContainer.innerHTML = ''; // Clear previous inputs
+                    {{-- @if (Auth::user()->user_role=="client")
+                    fileInputContainer.innerHTML = ''; 
                     const filePaths = JSON.parse(editButton.dataset.paths);
+                    
                     filePaths.forEach((path, index) => {
                         if (index === 0) {
                             // First input: Only "+" button
@@ -569,6 +567,8 @@
                             addInput(path);
                         }
                     });
+                    @endif --}}
+
 
                     fileModal.classList.remove('hidden');
                     fileModal.classList.add('flex');
@@ -642,22 +642,13 @@
                 isValid = false;
             }
 
-            // Validate File Paths
-            const filePathInputs = fileInputContainer.querySelectorAll('input[name="file_path[]"]');
-            const filePaths = Array.from(filePathInputs).map(input => input.value.trim());
-
-            if (filePaths.some(path => path === '')) {
-                document.getElementById('file-error').innerText = 'All file paths must be filled.';
-                document.getElementById('file-error').classList.remove('hidden');
-                isValid = false;
-            }
-
             if (!isValid) return; // Stop form submission if validation fails
 
             // Proceed with Form Submission
             const formData = new FormData(modalForm);
+            {{-- @if (Auth::user()->user_role!="admin")
             formData.append('file_path', JSON.stringify(filePaths));
-             
+            @endif --}}
             const url = isEditing ? `/update/${editId}` : '{{ route("store.file.path") }}';
             const method = 'POST';
              
@@ -675,28 +666,7 @@
                 });
 
                 const data = await response.json();
-                
-                if (!data.success) {
-                    if (data.invalid_paths && data.invalid_paths.length > 0) {
-                        filePathInputs.forEach((input, index) => {
-                            if (data.invalid_paths.includes(input.value.trim())) {
-                                let errorMessage = input.parentElement.querySelector('[id^="file-path-error-"]');
-                                if (!errorMessage) {
-                                    errorMessage = document.createElement('p');
-                                    errorMessage.classList.add('text-red-500', 'text-xs', 'mt-1');
-                                    errorMessage.id = `file-path-error-${Date.now()}`;
-                                    input.parentElement.appendChild(errorMessage);
-                                }
-                                errorMessage.innerText = 'Invalid file path.';
-                                errorMessage.classList.remove('hidden');
-                            }
-                        });
-                    } else {
-                        document.getElementById('file-error').innerText = data?.path ;
-                        document.getElementById('file-error').classList.remove('hidden');
-                    }
-                   
-                }
+
                 if (!response.ok) {
                 throw data; 
                 }
@@ -708,6 +678,7 @@
             } catch (error) {
                 console.error("Error submitting form:", error);
                 if (error.errors) {
+
                     document.getElementById('title-error').innerText = error.errors.title ? error.errors.title[0] : '';
                     document.getElementById('title-error').classList.remove('hidden');
                     document.getElementById('description-error').innerText = error.errors.description ? error.errors.description[0] : '';
