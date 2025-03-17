@@ -225,7 +225,9 @@ class FilePathController extends Controller
         try {
             
             $file = DailyReport::findOrFail($id);
+            if($user->user_role == 'client'){
             $reportDetails = ReportDetail::where('daily_report_id', $id)->delete();
+            }
             $user = User::findOrFail(Auth::id());
 
             $validator = Validator::make($request->all(), [

@@ -30,7 +30,7 @@
 
                 // Check if the response is successful
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    
                 }
 
                 const data = await response.json(); // Parse the JSON response
@@ -61,9 +61,10 @@
                                         <div class="p-6 text-gray-900 dark:text-gray-100 min-w-[200px]">
                                             ${project.project_name}
                                         </div>
-                                        <div class="px-4 py-2 flex gap-3" > <p class="bg-orange-500 text-white rounded-2xl px-4 py-1 text-center min-w-[4rem]">${newCount}</p><p class="bg-green-500 text-white rounded-2xl px-4 py-1 text-center min-w-[4rem]">${downoaldedCount}</p>  </div>
+                                        
 
-                                        <div class="p-6">
+                                        <div class="p-6 flex items-center ">
+                                        <div class="px-4 py-2 flex gap-3 mr-3" > <p class="bg-orange-500 text-white rounded-2xl px-4 py-1 text-center min-w-[4rem]">${newCount}</p><p class="bg-green-500 text-white rounded-2xl px-4 py-1 text-center min-w-[4rem]">${downoaldedCount}</p>  </div>
                                             <a href='http://127.0.0.1:8000/app/?data-id=${project.id}&data-name=${project.project_name}' class="cursor-pointer" class="view-btn"><i class="fa-solid fa-eye text-white"></i></a>
                                         </div>
                                          
